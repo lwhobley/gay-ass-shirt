@@ -1,0 +1,14 @@
+{
+  "name": "gas-fulfillment",
+  "version": "1.0.0",
+  "description": "G.A.S. — Stripe checkout + Printful auto-fulfillment",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "stripe": "^17.7.0"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
