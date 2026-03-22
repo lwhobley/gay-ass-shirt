@@ -14,13 +14,13 @@ const PRODUCTS = {
   "Retro Sunset Pride Tee":   { id: "69c01232bacaa499b7050fbb", S:18051, M:18053, L:18054, XL:18055, "2XL":18056 },
   "GAS Stamp Tee":            { id: "69c0123652a18016220248bb", S:18051, M:18053, L:18054, XL:18055, "2XL":18056 },
   "Original Groovy GAS Tee":  { id: "69c0123b47c38225cd091464", S:18051, M:18053, L:18054, XL:18055, "2XL":18056 },
-  "Ol Gay Ass Flame Polo":    { id: "69c01241e5021ddd5a0b3986", S:112158, M:112160, L:112162, XL:112164, "2XL":112166 },
-  "Not Gay My Shirt Is Polo": { id: "69c0124274db54a45c0fbe89", S:112158, M:112160, L:112162, XL:112164, "2XL":112166 },
-  "Gay Ass Pastel Polo":      { id: "69c0124630d65d0d260b98d5", S:112158, M:112160, L:112162, XL:112164, "2XL":112166 }
+  "Ol Gay Ass Flame Tee":     { id: "69c01241e5021ddd5a0b3986", S:18051, M:18053, L:18054, XL:18055, "2XL":18056 },
+  "Not Gay My Shirt Is Tee":  { id: "69c0124274db54a45c0fbe89", S:18051, M:18053, L:18054, XL:18055, "2XL":18056 },
+  "Gay Ass Pastel Tee":       { id: "69c0124630d65d0d260b98d5", S:18051, M:18053, L:18054, XL:18055, "2XL":18056 }
 };
 
 async function createPrintifyOrder(session) {
-  var token = process.env.PRINTIFY_API_KEY;
+  var token  = process.env.PRINTIFY_API_KEY;
   var shopId = process.env.PRINTIFY_SHOP_ID;
   if (!token || !shopId) { console.error("Missing Printify env vars"); return; }
   var shipping = session.shipping_details;
