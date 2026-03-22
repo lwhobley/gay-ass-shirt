@@ -1,145 +1,97 @@
-// api/setup-products.js  v3 — split mode
-// Step 1 - upload images:  ?secret=gas-setup-2024&step=upload
-// Step 2 - create products: ?secret=gas-setup-2024&step=create&ids=PASTE_JSON_HERE
-// Or run both:             ?secret=gas-setup-2024&step=all
-
-module.exports = async function handler(req, res) {
-if (req.query.secret !== ‘gas-setup-2024’) return res.status(401).end(‘Unauthorized’);
-
-const token  = process.env.PRINTIFY_API_KEY;
-const shopId = process.env.PRINTIFY_SHOP_ID;
-if (!token || !shopId) return res.status(500).json({ error: ‘Missing PRINTIFY_API_KEY or PRINTIFY_SHOP_ID’ });
-
-const step = req.query.step || ‘upload’;
 const BASE = ‘https://raw.githubusercontent.com/lwhobley/gay-ass-shirt/main/designs’;
 
-const designFiles = [
-{ key: ‘rainbow_llama’,    file: ‘IMG_1832.png’  },
-{ key: ‘gas_flame’,        file: ‘IMG_1850.png’  },
-{ key: ‘rainbow_stripes’,  file: ‘IMG_1848.png’  },
-{ key: ‘neon_sign’,        file: ‘IMG_1825.jpeg’ },
-{ key: ‘yellow_purple’,    file: ‘IMG_1846.png’  },
-{ key: ‘not_gay_50’,       file: ‘IMG_1853.png’  },
-{ key: ‘dont_touch’,       file: ‘IMG_1822.jpeg’ },
-{ key: ‘its_my_bubble’,    file: ‘IMG_1851.png’  },
-{ key: ‘glitter_script’,   file: ‘IMG_1847.png’  },
-{ key: ‘retro_pastel’,     file: ‘IMG_1849.png’  },
-{ key: ‘retro_sunset’,     file: ‘IMG_1845.png’  },
-{ key: ‘gas_stamp’,        file: ‘IMG_1823.jpeg’ },
-{ key: ‘groovy_original’,  file: ‘IMG_1821.png’  },
-{ key: ‘flame_tattoo’,     file: ‘IMG_1852.png’  },
-{ key: ‘not_gay_shirt_is’, file: ‘IMG_1854.png’  },
-{ key: ‘pastel_sticker’,   file: ‘IMG_1826.jpeg’ },
+const FILES = [
+[‘rainbow_llama’,    ‘IMG_1832.png’],
+[‘gas_flame’,        ‘IMG_1850.png’],
+[‘rainbow_stripes’,  ‘IMG_1848.png’],
+[‘neon_sign’,        ‘IMG_1825.jpeg’],
+[‘yellow_purple’,    ‘IMG_1846.png’],
+[‘not_gay_50’,       ‘IMG_1853.png’],
+[‘dont_touch’,       ‘IMG_1822.jpeg’],
+[‘its_my_bubble’,    ‘IMG_1851.png’],
+[‘glitter_script’,   ‘IMG_1847.png’],
+[‘retro_pastel’,     ‘IMG_1849.png’],
+[‘retro_sunset’,     ‘IMG_1845.png’],
+[‘gas_stamp’,        ‘IMG_1823.jpeg’],
+[‘groovy_original’,  ‘IMG_1821.png’],
+[‘flame_tattoo’,     ‘IMG_1852.png’],
+[‘not_gay_shirt_is’, ‘IMG_1854.png’],
+[‘pastel_sticker’,   ‘IMG_1826.jpeg’],
 ];
 
-// ── STEP 1: Upload images ───────────────────────────────────────
-if (step === ‘upload’ || step === ‘all’) {
-const imageIds = {};
-for (const d of designFiles) {
+const TITLES = {
+rainbow_llama:    ‘Rainbow Llama Tee’,
+gas_flame:        ‘GAS Flame Logo Tee’,
+rainbow_stripes:  ‘Rainbow Stripes Tee’,
+neon_sign:        “It’s My Neon Sign Tee”,
+yellow_purple:    ‘Yellow Purple Bubble Tee’,
+not_gay_50:       “I’m Not Gay But $50 Is $50 Tee”,
+dont_touch:       “Don’t Touch My GAS Shirt Tee”,
+its_my_bubble:    “It’s My Gay Ass Shirt Tee”,
+glitter_script:   ‘Glitter Script Tee’,
+retro_pastel:     ‘Retro Pastel Tee’,
+retro_sunset:     ‘Retro Sunset Pride Tee’,
+gas_stamp:        ‘GAS Stamp Tee’,
+groovy_original:  ‘Original Groovy GAS Tee’,
+flame_tattoo:     “Ol’ Gay Ass Flame Polo”,
+not_gay_shirt_is: “I’m Not Gay My Shirt Is Polo”,
+pastel_sticker:   “It’s My Gay Ass Pastel Polo”,
+};
+
+const TEE_VARIANTS  = [18051,18053,18054,18055,18056];
+const POLO_VARIANTS = [112158,112160,112162,112164,112166];
+const POLO_KEYS = [‘flame_tattoo’,‘not_gay_shirt_is’,‘pastel_sticker’];
+
+module.exports = async function(req, res) {
+if (req.query.secret !== ‘gas-setup-2024’) return res.status(401).end(‘Unauthorized’);
+const token = process.env.PRINTIFY_API_KEY;
+const shop  = process.env.PRINTIFY_SHOP_ID;
+if (!token || !shop) return res.status(500).json({ error: ‘Missing env vars’ });
+
+const headers = { ‘Authorization’: ’Bearer ’ + token, ‘Content-Type’: ‘application/json’, ‘User-Agent’: ‘GASSite/1.0’ };
+const imgIds = {};
+
+// Upload images
+for (const [key, file] of FILES) {
 try {
 const r = await fetch(‘https://api.printify.com/v1/uploads/images.json’, {
-method: ‘POST’,
-headers: {
-‘Authorization’: `Bearer ${token}`,
-‘Content-Type’: ‘application/json’,
-‘User-Agent’: ‘GASSite/1.0’
-},
-body: JSON.stringify({ file_name: d.file, url: `${BASE}/${d.file}` })
+method: ‘POST’, headers,
+body: JSON.stringify({ file_name: file, url: BASE + ‘/’ + file })
 });
-const data = await r.json();
-if (!r.ok) throw new Error(data.message || JSON.stringify(data).slice(0,200));
-imageIds[d.key] = data.id;
+const d = await r.json();
+imgIds[key] = r.ok ? d.id : ‘ERR:’ + (d.message || ‘’).slice(0,80);
 } catch(e) {
-imageIds[d.key] = `ERROR:${e.message.slice(0,100)}`;
+imgIds[key] = ‘ERR:’ + e.message.slice(0,80);
 }
 }
 
-```
-if (step === 'upload') {
-  return res.status(200).json({
-    message: 'Images uploaded! Copy the image_ids below and call ?step=create&ids=PASTE',
-    image_ids: imageIds
-  });
-}
-// fall through to create if step=all
-return createProducts(res, token, shopId, imageIds);
-```
-
-}
-
-// ── STEP 2: Create products (pass ids as query param) ──────────
-if (step === ‘create’) {
-let imageIds;
+// Create products
+const products = {};
+for (const [key] of FILES) {
+if (!imgIds[key] || imgIds[key].startsWith(‘ERR’)) continue;
+const isPolo = POLO_KEYS.includes(key);
+const variants = isPolo ? POLO_VARIANTS : TEE_VARIANTS;
+const blueprint = isPolo ? 1604 : 12;
+const provider  = isPolo ? 10 : 99;
+const price     = isPolo ? 3500 : 2500;
 try {
-imageIds = JSON.parse(req.query.ids || ‘{}’);
-} catch(e) {
-return res.status(400).json({ error: ‘Invalid ids JSON’ });
-}
-return createProducts(res, token, shopId, imageIds);
-}
-
-return res.status(400).json({ error: ‘Invalid step. Use upload, create, or all’ });
-};
-
-async function createProducts(res, token, shopId, imageIds) {
-const TEE  = { S:18051, M:18053, L:18054, XL:18055, “2XL”:18056 };
-const POLO = { S:112158, M:112160, L:112162, XL:112164, “2XL”:112166 };
-
-function product(title, desc, imageId, blueprintId, providerId, variants, price) {
-if (!imageId || imageId.startsWith(‘ERROR’)) return null;
-return {
-title, description: desc,
-blueprint_id: blueprintId,
-print_provider_id: providerId,
-variants: Object.values(variants).map(id => ({ id, price, is_enabled: true })),
-print_areas: [{
-variant_ids: Object.values(variants),
-placeholders: [{ position: ‘front’, images: [{ id: imageId, x:0.5, y:0.5, scale:1, angle:0 }] }]
-}]
-};
-}
-
-const tee  = (t,d,k,p=2500) => product(t,d,imageIds[k],12,99,TEE,p);
-const polo = (t,d,k,p=3500) => product(t,d,imageIds[k],1604,10,POLO,p);
-
-const products = [
-tee(‘Rainbow Llama Tee’,               ‘Gay Ass Shirt — Rainbow llama pride’,           ‘rainbow_llama’),
-tee(‘G.A.S. Flame Logo Tee’,           ‘Gay Ass Shirt — GAS flame logo’,                ‘gas_flame’),
-tee(‘Rainbow Pride Stripes Tee’,       ‘Gay Ass Shirt — Bold rainbow stripes’,          ‘rainbow_stripes’),
-tee(“It’s My Neon Sign Tee”,           “Gay Ass Shirt — Neon sign It’s My GAS”,         ‘neon_sign’),
-tee(‘Yellow Purple Bubble Tee’,        ‘Gay Ass Shirt — Yellow bubble purple outline’,  ‘yellow_purple’),
-tee(“I’m Not Gay But $50 Is $50 Tee”,  “Gay Ass Shirt — Funny $50 is $50”,             ‘not_gay_50’),
-tee(“Don’t Touch My GAS Shirt Tee”,    “Gay Ass Shirt — Don’t touch my gas ass shirt”, ‘dont_touch’),
-tee(“It’s My Gay Ass Shirt Bubble Tee”,“Gay Ass Shirt — Bubble letters”,                ‘its_my_bubble’),
-tee(‘Glitter Script Tee’,              ‘Gay Ass Shirt — Glitter script’,                ‘glitter_script’),
-tee(‘Retro Pastel Tee’,                ‘Gay Ass Shirt — Retro pastel stacked’,          ‘retro_pastel’),
-tee(‘Retro Sunset Pride Tee’,          ‘Gay Ass Shirt — Retro sunset Houston TX’,       ‘retro_sunset’),
-tee(‘GAS Stamp Tee’,                   ‘Gay Ass Shirt — You Like My GAS Stamp’,         ‘gas_stamp’),
-tee(‘Original Groovy GAS Tee’,         ‘Gay Ass Shirt — Original groovy design’,        ‘groovy_original’),
-polo(“Ol’ Gay Ass Flame Polo”,         “Gay Ass Shirt — Flame tattoo polo”,             ‘flame_tattoo’),
-polo(“I’m Not Gay My Shirt Is Polo”,   “Gay Ass Shirt — I’m not gay my shirt is”,      ‘not_gay_shirt_is’),
-polo(“It’s My Gay Ass Pastel Polo”,    “Gay Ass Shirt — Pastel sticker polo”,           ‘pastel_sticker’),
-].filter(Boolean);
-
-const created = {};
-for (const p of products) {
-try {
-const r = await fetch(`https://api.printify.com/v1/shops/${shopId}/products.json`, {
-method: ‘POST’,
-headers: {
-‘Authorization’: `Bearer ${token}`,
-‘Content-Type’: ‘application/json’,
-‘User-Agent’: ‘GASSite/1.0’
-},
-body: JSON.stringify(p)
+const r = await fetch(‘https://api.printify.com/v1/shops/’ + shop + ‘/products.json’, {
+method: ‘POST’, headers,
+body: JSON.stringify({
+title: TITLES[key],
+description: ’Gay Ass Shirt — ’ + TITLES[key],
+blueprint_id: blueprint,
+print_provider_id: provider,
+variants: variants.map(id => ({ id, price, is_enabled: true })),
+print_areas: [{ variant_ids: variants, placeholders: [{ position: ‘front’, images: [{ id: imgIds[key], x: 0.5, y: 0.5, scale: 1, angle: 0 }] }] }]
+})
 });
-const data = await r.json();
-if (!r.ok) throw new Error(data.message || JSON.stringify(data).slice(0,200));
-created[p.title] = data.id;
+const d = await r.json();
+products[TITLES[key]] = r.ok ? d.id : ‘ERR:’ + (d.message || ‘’).slice(0,80);
 } catch(e) {
-created[p.title] = `ERROR:${e.message.slice(0,100)}`;
+products[TITLES[key]] = ‘ERR:’ + e.message.slice(0,80);
 }
 }
 
-return res.status(200).json({ message: ‘Products created!’, product_ids: created });
-}
+return res.status(200).json({ image_ids: imgIds, product_ids: products });
+};
